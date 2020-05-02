@@ -1,11 +1,17 @@
-import sys, pygame, random, math
+import sys, pygame, random, math, os
 pygame.init()
 
-BALL = pygame.image.load("giphy.gif")
-HOOP = pygame.image.load("hoop.png")
-BACKGROUND = pygame.image.load("background.jpg")
-HOOP = pygame.transform.scale(HOOP, (100, 100))
+base_path = os.path.dirname(__file__)
+ball_path = os.path.join(base_path, "images/ball.gif")
+hoop_path = os.path.join(base_path, "images/hoop.png")
+background_path = os.path.join(base_path, "images/background.jpg")
+
+BALL = pygame.image.load(ball_path)
+HOOP = pygame.image.load(hoop_path)
+BACKGROUND = pygame.image.load(background_path)
+
 BALL = pygame.transform.scale(BALL, (100, 100))
+HOOP = pygame.transform.scale(HOOP, (100, 100))
 BACKGROUND = pygame.transform.scale(BACKGROUND, (1000, 684))
 
 size = width, height = 1000, 684
