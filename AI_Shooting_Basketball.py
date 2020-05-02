@@ -1,4 +1,4 @@
-import sys, pygame, random, math, os
+import sys, pygame, random, math, os, neat
 from Ball import Ball
 pygame.init()
 
@@ -6,11 +6,8 @@ base_path = os.path.dirname(__file__)
 hoop_path = os.path.join(base_path, "images/hoop.png")
 background_path = os.path.join(base_path, "images/background.jpg")
 
-HOOP = pygame.image.load(hoop_path)
-BACKGROUND = pygame.image.load(background_path)
-
-HOOP = pygame.transform.scale(HOOP, (100, 100))
-BACKGROUND = pygame.transform.scale(BACKGROUND, (1000, 684))
+HOOP = pygame.transform.scale(pygame.image.load(hoop_path), (100, 100))
+BACKGROUND = pygame.transform.scale(pygame.image.load(background_path), (1000, 684))
 
 size = width, height = 1000, 684
 
@@ -76,3 +73,18 @@ def driver():
     quit()
 
 driver()
+
+def run(config_path):
+    config = neat.config.Config(neat.DefaultGenome, neat.DefaultReproduction, neat.DefaultSpeciesSet, neat.DefaultStagnation, config_path)
+
+    p = neat.Population(config)
+
+    p.add_reporter(neat.StdOutReporter(True))
+    stats = neats.StatisticsReporter();
+    p.add_reporter(stats)
+
+    winner = p.run(, 50)
+
+if __name__ "__main__":
+    config_path = os.path.join(base_path, "config-feedforward.txt")
+    run(config_path)
