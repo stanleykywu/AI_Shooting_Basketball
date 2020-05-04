@@ -36,14 +36,21 @@ def check_lose(balls):
     return False
 
 def offScreen(ball):
-    if ball.x > 1000 or ball.x < 0 or ball.y > 684 or ball.y < 0:
+    if ball.x > 1000 or ball.x < 0 or ball.y > 684:
         return True
     return False
 
 def inBucket(ball, rand_x, rand_y):
-    middle_x = ball.x + 100
-    middle_y = ball.y + 100
-    if rand_x + 20 <= middle_x <= rand_x + 80 and rand_y + 20 <= middle_y <= rand_y + 80:
+    middle_x = ball.x + 50
+    middle_y = ball.y + 50
+    if rand_x + 20 <= middle_x <= rand_x + 100 and rand_y + 20 <= middle_y <= rand_y + 100:
+        return True
+    return False
+
+def nearBucket(ball, rand_x, rand_y):
+    middle_x = ball.x + 50
+    middle_y = ball.y + 50
+    if rand_x - 50 <= middle_x <= rand_x + 150 and rand_y - 50 <= middle_y <= rand_y + 150:
         return True
     return False
 
@@ -54,15 +61,22 @@ def all_stop(balls):
 
     return True
 
-def single_player():
+def single_player(genome, config):
     rand_y = random.randint(250, 584)
+    # rand_x = random.randint(500, 900)
+
     clock = pygame.time.Clock()
     screen = pygame.display.set_mode(size)
-    press = None
-    balls = []
 
-    screen.blit(BACKGROUND, (0,0))
-    pygame.display.update()
+    net = neat.nn.FeedForwardNetwork.create(genome, config)
+
+    output = net.activate([(rand_y - 250)/ 334])
+    angle = output[0] * 2 * math.pi
+    vel = output[1] * 50
+
+    # print(angle, vel)
+
+    ball = Ball(0, 584, angle, vel)
 
     run = True;
     while(run):
@@ -70,30 +84,25 @@ def single_player():
         for event in pygame.event.get():
             if event.type == pygame.QUIT: 
                 run = False
-            elif event.type == pygame.MOUSEBUTTONDOWN:
-                press = pygame.mouse.get_pos()
+                pygame.quit()
+                quit()
 
-        if press is not None:
-            balls.append(Ball(0, 584, math.atan((684 - press[1]) / press[1])))
-
-            press = None
-    
-        for ball in balls:
-            ball.move()
-
-        draw_screen(screen, balls, rand_y)
-        
-        if check_win(balls, rand_y):
+        if ball.x_vel == 0 and ball.y_vel == 0 or offScreen(ball):
             run = False
-        elif check_lose(balls):
-            driver()
+            break
 
-    pygame.quit()
-    quit()
+        if inBucket(ball, 900, rand_y):
+            ball.x_vel = 0
+            ball.y_vel = 0
+            break
+
+        ball.move()
+        
+        draw_screen(screen, [ball], 900, rand_y)
 
 def eval_genome(genomes, config):
     rand_y = random.randint(250, 584)
-    rand_x = random.randint(500, 900)
+    # rand_x = random.randint(500, 900)
 
     clock = pygame.time.Clock()
     screen = pygame.display.set_mode(size)
@@ -105,10 +114,9 @@ def eval_genome(genomes, config):
     for _, g in genomes:
         net = neat.nn.FeedForwardNetwork.create(g, config)
 
-        output = net.activate([rand_x, rand_y])
+        output = net.activate([(rand_y - 250)/ 334])
         angle = output[0] * 2 * math.pi
         vel = output[1] * 50
-
         # print(angle, vel)
 
         balls.append(Ball(0, 584, angle, vel))
@@ -133,18 +141,22 @@ def eval_genome(genomes, config):
                 ge[x].fitness -= 10
                 balls.pop(x)
                 ge.pop(x)
-            elif inBucket(ball, rand_x, rand_y):
+        
+        for x, ball in enumerate(balls):
+            if nearBucket(ball, 900, rand_y):
+                ge[x].fitness += 5
+            if inBucket(ball, 900, rand_y):
                 ge[x].fitness += 10
                 ball.x_vel = 0
                 ball.y_vel = 0
         
-        for x, ball in enumerate(balls):
-            ge[x].fitness += 0.5
+        # for x, ball in enumerate(balls):
+        #     ge[x].fitness += ball.x / 10000
 
         for ball in balls:
             ball.move()
         
-        draw_screen(screen, balls, rand_x, rand_y)
+        draw_screen(screen, balls, 900, rand_y)
 
 def initiate_training(config_path):
     config = neat.config.Config(neat.DefaultGenome, neat.DefaultReproduction, neat.DefaultSpeciesSet, neat.DefaultStagnation, config_path)
@@ -155,9 +167,12 @@ def initiate_training(config_path):
     stats = neat.StatisticsReporter();
     p.add_reporter(stats)
 
-    winner = p.run(eval_genome, 100)
+    winner = p.run(eval_genome, 50)
     
     print('\nBest genome:\n{!s}'.format(winner))
+
+    for i in range(10):
+        single_player(winner, config)
 
 if __name__ == "__main__":
     config_path = os.path.join(base_path, "config-feedforward.txt")
